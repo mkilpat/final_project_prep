@@ -18,47 +18,44 @@
 Given a list of candidates on stdin, produce a file of hashes ("map file").
 """
 
-import csv
-import sys
 
 import rappor
+import pandas as pd
 
 
-def HashCandidates(params, stdin, stdout):
-  num_bloombits = params.num_bloombits
-  csv_out = csv.writer(stdout)
+def HashCandidates(params, vals, out):
+    num_bloombits = params.num_bloombits
+    hashed = {}
 
-  for line in stdin:
-    word = line.strip()
-    row = [word]
-    for cohort in range(params.num_cohorts):
-      bloom_bits = rappor.get_bloom_bits(word, cohort, params.num_hashes,
-                                         num_bloombits)
-      for bit_to_set in bloom_bits:
-        # bits are indexed from 1.  Add a fixed offset for each cohort.
-        # NOTE: This detail could be omitted from the map file format, and done
-        # in R.
-        row.append(cohort * num_bloombits + (bit_to_set + 1))
-    csv_out.writerow(row)
+    for line in vals:
+        word = line.strip()
+        bits = []
+        for cohort in range(params.num_cohorts):
+            bloom_bits = rappor.get_bloom_bits(word, cohort, params.num_hashes, num_bloombits)
+
+            for bit_to_set in bloom_bits:
+                bits.append(cohort * num_bloombits + (bit_to_set + 1))
+
+        hashed[word] = bits
+
+    hashed = pd.DataFrame.from_dict(hashed, orient='index')
+    hashed.to_csv(out)
 
 
-def main(argv):
-  try:
-    filename = argv[1]
-  except IndexError:
-    raise RuntimeError('Usage: hash_candidates.py <params file>')
-  with open(filename) as f:
-    try:
-      params = rappor.Params.from_csv(f)
-    except rappor.Error as e:
-      raise RuntimeError(e)
+def main():
+    params = rappor.Params()
+    params.num_bloombits = 16
+    params.num_hashes = 2
+    params.num_cohorts = 64
+    params.prob_p = 0.5
+    params.prob_q = 0.75
+    params.prob_f = 0.5
 
-  HashCandidates(params, sys.stdin, sys.stdout)
+    vals = list(map(lambda x: 'v'+str(x), range(60)))
+    out = '/Users/Michael/PycharmProjects/untitled1/data/hashed.csv'
+
+    HashCandidates(params, vals, out)
 
 
 if __name__ == '__main__':
-  try:
-    main(sys.argv)
-  except RuntimeError, e:
-    print >>sys.stderr, e.args[0]
-    sys.exit(1)
+    main()

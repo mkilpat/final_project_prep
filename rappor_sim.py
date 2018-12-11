@@ -11,17 +11,6 @@ def RapporClientSim(params, irr_rand, csv_in):
     # instance up front per client, rather than one per row below.
 
     for i, (index, client_str, cohort_str, true_value) in csv_in.iterrows():
-        #if i == 0:
-          #if client_str != 'clients':
-            #raise RuntimeError('Expected client header, got %s' % client_str)
-          #if cohort_str != 'cohort':
-            #raise RuntimeError('Expected cohort header, got %s' % cohort_str)
-          #if true_value != 'true_values':
-            #raise RuntimeError('Expected value header, got %s' % true_value)
-          #continue  # skip header row
-
-      #if i == 30:  # EARLY STOP
-      #  break
 
 
         cohort = int(cohort_str)
@@ -37,7 +26,6 @@ def RapporClientSim(params, irr_rand, csv_in):
         irr_str = rappor.bit_string(irr, params.num_bloombits)
 
         out_rows[i] = [client_str, cohort_str, bloom_str, prr_str, irr_str]
-
 
     output = pd.DataFrame.from_dict(out_rows, orient='index')
     output.columns = header
